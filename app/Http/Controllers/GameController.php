@@ -7,7 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+
 
 class GameController extends Controller
 {
@@ -43,8 +45,9 @@ class GameController extends Controller
         $game = Game::create($request->all());
 
         $name = $request->image_path->getClientOriginalName();
-        $destination = 'images/games/'.$game->id;
-        $request->image_path->move(public_path($destination), $name);
+        $destination = 'images/games/'.$game->id . '/' . $name;
+
+        $path = Storage::disk('s3')->put($destination, file_get_contents($request->image_path));
 
         $game->image_path = $destination.'/'.$name;
         $game->save();
