@@ -9,6 +9,9 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Aws\S3\S3Client;  
+use Aws\Exception\AwsException;
+use Illuminate\Support\Facades\Config;
 
 
 class GameController extends Controller
@@ -30,7 +33,29 @@ class GameController extends Controller
      **/
     public function create()
     {
-        return view('games/create');
+        $s3 = Storage::disk('s3');
+        $client = $s3->getDriver()->getAdapter()->getClient();
+        $bucket = $s3->getAdapter()->getBucket();
+        $formInputs = ['acl' => 'private'];
+        $options = [
+            ['acl' => 'public-read'],
+            ['bucket' => $bucket],
+            ['starts-with', '$key', 'user/eric/'],
+        ];
+        
+        // Optional: configure expiration time string
+        $expires = '+2 hours';
+        
+        $postObject = new \Aws\S3\PostObjectV4(
+            $client,
+            $bucket,
+            $formInputs,
+            $options,
+            $expires
+        );
+        
+
+        return view('games.create', $request);
     }
 
     /**
@@ -45,7 +70,7 @@ class GameController extends Controller
         $game = Game::create($request->all());
 
         $file = $request->image_path;
-        $destination = 'images/games/'.$game->id . '/' . $file;
+        $destination = 'images/games/' . $game->id . '/' . $file;
         $game->image_path = Storage::disk('s3')->putFile($destination, $request->image_path);
         $game->save();
 
