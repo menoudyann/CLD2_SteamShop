@@ -21,7 +21,7 @@
                                 </td>
                                 <td>
                                     <a href="{{ route('games.show', $game) }}">
-                                        <img src="{{ url($game->image_path) }}" style="max-width: 200px">
+                                        <img src="{{ route('games.show', $game) }}" style="max-width: 200px">
                                     </a>
                                 </td>
                                 <td>

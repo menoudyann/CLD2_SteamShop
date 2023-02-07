@@ -44,12 +44,9 @@ class GameController extends Controller
     {
         $game = Game::create($request->all());
 
-        $name = $request->image_path->getClientOriginalName();
-        $destination = 'images/games/'.$game->id . '/' . $name;
-
-        $path = Storage::disk('s3')->put($destination, file_get_contents($request->image_path));
-
-        $game->image_path = $destination.'/'.$name;
+        $file = $request->image_path;
+        $destination = 'images/games/'.$game->id . '/' . $file;
+        $game->image_path = Storage::disk('s3')->putFile($destination, $request->image_path);
         $game->save();
 
         return redirect()->route('games.index');
@@ -73,8 +70,12 @@ class GameController extends Controller
      *
      * @return View
      */
-    public function show(Game $game): View
+    public function show(Request $request, Game $game): View
     {
+        if ($request->prefers(['text', 'image']) == 'image') {
+            $name = $request->image_path->getClientOriginalName();
+            return redirect(Storage::disk('s3')->temporaryUrl($game->imagePath, now()->addMinutes(2)));
+        }
         return view('games/show', compact('game'));
     }
 
