@@ -33,14 +33,19 @@ class GameController extends Controller
      **/
     public function create()
     {
-        $s3 = Storage::disk('s3');
-        $client = $s3->getDriver()->getAdapter()->getClient();
-        $bucket = $s3->getAdapter()->getBucket();
+        $client = new \Aws\S3\S3Client([
+            'version' => 'latest',
+            'region' => 'eu-west-1',
+        ]);
+
+        $bucket = config('filesystems.disks.s3.bucket');
+
         $formInputs = ['acl' => 'private'];
+
         $options = [
             ['acl' => 'public-read'],
             ['bucket' => $bucket],
-            ['starts-with', '$key', 'user/eric/'],
+            ['starts-with', '$key', 'ymd/images/'],
         ];
         
         // Optional: configure expiration time string
@@ -54,8 +59,7 @@ class GameController extends Controller
             $expires
         );
         
-
-        return view('games.create', $request);
+        return view('games.create');
     }
 
     /**
@@ -69,8 +73,7 @@ class GameController extends Controller
     {
         $game = Game::create($request->all());
 
-        $file = $request->image_path;
-        $destination = 'images/games/' . $game->id . '/' . $file;
+        $destination = 'ymd/images/games/' . $game->id;
         $game->image_path = Storage::disk('s3')->putFile($destination, $request->image_path);
         $game->save();
 
@@ -95,11 +98,10 @@ class GameController extends Controller
      *
      * @return View
      */
-    public function show(Request $request, Game $game): View
+    public function show(Request $request, Game $game)
     {
         if ($request->prefers(['text', 'image']) == 'image') {
-            $name = $request->image_path->getClientOriginalName();
-            return redirect(Storage::disk('s3')->temporaryUrl($game->imagePath, now()->addMinutes(2)));
+            return redirect(Storage::disk('s3')->temporaryUrl($game->image_path, now()->addMinutes(2)));
         }
         return view('games/show', compact('game'));
     }
