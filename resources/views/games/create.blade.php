@@ -9,7 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <form method="post" action="{{ route('games.store') }}" class="mt-12 space-y-12" enctype="multipart/form-data">
+                <form id="create-game" method="post" action="{{ route('games.store') }}" class="mt-12 space-y-12" enctype="multipart/form-data">
                         @csrf
                         @method('POST')
 
@@ -45,6 +45,17 @@
                             <x-primary-button>Save</x-primary-button>
                         </div>
                     </form>
+                    <script>
+                        document.getElementById("create-game").addEventListener('submit', async function() {
+                            const formData = new FormData();
+                            @foreach($presignedInputs as $name => $value)
+                                formData.append("{{ $name }}", "{{ $value }}");
+                            @endforeach
+                            formData.append("file", document.getElementById("image_path").files[0]);
+                            const response = await fetch("{{ $presignedUrl }}", {method: 'POST', body: formData});
+                            document.getElementById("image_path").remove();
+                        });
+                    </script>
                 </div>
             </div>
         </div>

@@ -43,9 +43,9 @@ class GameController extends Controller
         $formInputs = ['acl' => 'private'];
 
         $options = [
-            ['acl' => 'public-read'],
+            ['acl' => 'private'],
             ['bucket' => $bucket],
-            ['starts-with', '$key', 'ymd/images/'],
+            ['eq', '$key', 'ymd/images/'],
         ];
         
         // Optional: configure expiration time string
@@ -59,7 +59,7 @@ class GameController extends Controller
             $expires
         );
         
-        return view('games.create');
+        return view('games.create', ['presignedUrl' => $postObject->getFormAttributes()['action'], 'presignedInputs' => $postObject->getFormInputs()]);
     }
 
     /**
