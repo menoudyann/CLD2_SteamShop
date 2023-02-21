@@ -9,7 +9,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Aws\S3\S3Client;  
+use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
 use Illuminate\Support\Facades\Config;
 
@@ -33,33 +33,9 @@ class GameController extends Controller
      **/
     public function create()
     {
-        $client = new \Aws\S3\S3Client([
-            'version' => 'latest',
-            'region' => 'eu-west-1',
-        ]);
-
-        $bucket = config('filesystems.disks.s3.bucket');
-
-        $formInputs = ['acl' => 'private'];
-
-        $options = [
-            ['acl' => 'private'],
-            ['bucket' => $bucket],
-            ['eq', '$key', 'ymd/images/'],
-        ];
-        
-        // Optional: configure expiration time string
-        $expires = '+2 hours';
-        
-        $postObject = new \Aws\S3\PostObjectV4(
-            $client,
-            $bucket,
-            $formInputs,
-            $options,
-            $expires
-        );
-        
-        return view('games.create', ['presignedUrl' => $postObject->getFormAttributes()['action'], 'presignedInputs' => $postObject->getFormInputs()]);
+        $targetImagePath = 'ymd/images/' . \Str::random(40);
+        $presignedRequest = $this->createPresignedPostRequest($targetImagePath);
+        return view('games.create', ['presignedUrl' => $presignedRequest->getFormAttributes()['action'], 'presignedInputs' => $presignedRequest->getFormInputs()]);
     }
 
     /**
@@ -72,9 +48,6 @@ class GameController extends Controller
     public function store(Request $request)
     {
         $game = Game::create($request->all());
-
-        $destination = 'ymd/images/games/' . $game->id;
-        $game->image_path = Storage::disk('s3')->putFile($destination, $request->image_path);
         $game->save();
 
         return redirect()->route('games.index');
@@ -157,5 +130,41 @@ class GameController extends Controller
     public function destroy(Game $game)
     {
         //
+    }
+
+    /**
+     * Create presigned URL.
+     *
+     * @param  \App\Models\Game  $game
+     *
+     * @return Response
+     */
+    public function createPresignedPostRequest($key, $expiration = "+2 hours")
+    {
+        $client = new \Aws\S3\S3Client([
+            'version' => 'latest',
+            'region' => env('AWS_DEFAULT_REGION'),
+        ]);
+
+        $bucket = config('filesystems.disks.s3.bucket');
+
+        $formInputs = ['acl' => 'private', 'key' => $key];
+
+        $options = [
+            ['acl' => 'private'],
+            ['bucket' => $bucket],
+            ['eq', '$key', $key],
+        ];
+
+
+        $postObject = new \Aws\S3\PostObjectV4(
+            $client,
+            $bucket,
+            $formInputs,
+            $options,
+            $expiration
+        );
+
+        return $postObject;
     }
 }

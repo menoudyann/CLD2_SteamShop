@@ -32,7 +32,8 @@
                         </div>
 
                         <div class="col-md-6">
-                            <x-text-input id="image_path" name="image_path" type="file" class="mt-1 block w-full" required/>
+                            <x-text-input id="image_path" name="file" type="file" class="mt-1 block w-full" required/>
+                            <input type="hidden" name="image_path" value="{{ $presignedInputs['key'] }}">
                         </div>
 
                         <div>
@@ -40,21 +41,27 @@
                             <x-text-input id="release_date" name="release_date" type="datetime-local" class="mt-1 block w-full datetimepicker" required/>
                             <x-input-error class="mt-2" :messages="$errors->get('release_date')"/>
                         </div>
-
                         <div class="flex items-center gap-4">
                             <x-primary-button>Save</x-primary-button>
                         </div>
                     </form>
                     <script>
-                        document.getElementById("create-game").addEventListener('submit', async function() {
+                        document.getElementById("create-game").addEventListener('submit', async function(event) {
+                            event.preventDefault()
+                            const fileInput = document.getElementById("image_path");
                             const formData = new FormData();
                             @foreach($presignedInputs as $name => $value)
                                 formData.append("{{ $name }}", "{{ $value }}");
                             @endforeach
-                            formData.append("file", document.getElementById("image_path").files[0]);
-                            const response = await fetch("{{ $presignedUrl }}", {method: 'POST', body: formData});
-                            document.getElementById("image_path").remove();
-                        });
+                            formData.append("file", fileInput.files[0]);
+                            const response = await fetch("{{ $presignedUrl }}", {method: 'POST', body: formData, mode: "no-cors"});
+                            if (response.ok) {
+                                fileInput.remove();
+                                this.submit();
+                            } else {
+                                console.log("Fail "+response.status);
+                            }
+                        }, { once: true });
                     </script>
                 </div>
             </div>
