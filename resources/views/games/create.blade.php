@@ -54,7 +54,7 @@
                                 formData.append("{{ $name }}", "{{ $value }}");
                             @endforeach
                             formData.append("file", fileInput.files[0]);
-                            const response = await fetch("{{ $presignedUrl }}", {method: 'POST', body: formData, mode: "no-cors"});
+                            const response = await fetch("{{ $presignedUrl }}", {method: 'POST', body: formData, credentials: "same-origin"});
                             if (response.ok) {
                                 fileInput.remove();
                                 this.submit();
